@@ -1,5 +1,10 @@
 package com.example.test;
 
+import com.azure.messaging.servicebus.ServiceBusClientBuilder;
+import com.azure.messaging.servicebus.ServiceBusMessage;
+import com.azure.messaging.servicebus.ServiceBusSenderClient;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.HttpMethod;
 import com.microsoft.azure.functions.HttpRequestMessage;
@@ -9,6 +14,7 @@ import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -21,6 +27,25 @@ public class Function {
      * 2. curl "{your host}/api/HttpExample?name=HTTP%20Query"
      */
 
+    private static final String SERVICE_BUS_FQDN = "sbpoc20122023.servicebus.windows.net";
+    private static final String QUEUE_NAME = "einvoice";
+    private static final String CONNECTION_STRING = "Endpoint=sb://sbpoc20122023.servicebus.windows.net/;SharedAccessKeyName=pru-policy;SharedAccessKey=PPVJpavg5NQnKMOtAjZMkWd1/X5HVzpWM+ASbK5jMkM=;EntityPath=einvoice";
+
+    private ServiceBusSenderClient senderClient = null;
+    private ObjectMapper objectMapper = new ObjectMapper();
+    private  void sendMessage(EInvoice invoice){
+        senderClient.sendMessage(new ServiceBusMessage("Hello, World!"));
+    }
+
+    public Function(){
+                 senderClient = new ServiceBusClientBuilder()
+                .connectionString(CONNECTION_STRING)
+                .sender()
+                .queueName(QUEUE_NAME)
+                .buildClient();
+                 System.out.println("----------------constructor:" + senderClient);
+    }
+
     @FunctionName("TriggerStringPost")
     public HttpResponseMessage run(
             @HttpTrigger(name = "req",
@@ -30,7 +55,7 @@ public class Function {
             final ExecutionContext context) {
 
         // Item list
-        context.getLogger().info("Request body is: " + request.getBody().orElse(""));
+        //context.getLogger().info("Request body is: " + request.getBody().orElse(""));
 
         // Check request body
         if (!request.getBody().isPresent()) {
@@ -39,15 +64,35 @@ public class Function {
                     .build();
         }
         else {
-            // return JSON from to the client
-            // Generate document
-            final String body = request.getBody().get();
-            final String jsonDocument = "{\"id\":\"123456\", " +
-                    "\"description\": \"" + body + "\"}";
+
+            try {
+                String jsonDocument = request.getBody().get();
+                List<EInvoice> einvoiceList = objectMapper.readValue(jsonDocument, new TypeReference<List<EInvoice>>() {
+                });
+                einvoiceList.forEach(this::sendMessage);
+            }
+            catch (Exception e){
+                e.printStackTrace();
+                return request.createResponseBuilder(HttpStatus.OK)
+                        .header("Content-Type", "application/json")
+                        .body("I got it...but got error when passing Json doc:")
+                        .build();
+            }
+
             return request.createResponseBuilder(HttpStatus.OK)
                     .header("Content-Type", "application/json")
-                    .body(jsonDocument)
+                    .body("I got it...validated the Json doc.")
                     .build();
+
+            // return JSON from to the client
+            // Generate document
+//            final String body = request.getBody().get();
+//            final String jsonDocument = "{\"id\":\"123456\", " +
+//                    "\"description\": \"" + body + "\"}";
+//            return request.createResponseBuilder(HttpStatus.OK)
+//                    .header("Content-Type", "application/json")
+//                    .body(jsonDocument)
+//                    .build();
         }
     }
 //    @FunctionName("HttpExample")
