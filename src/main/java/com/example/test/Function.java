@@ -33,9 +33,11 @@ public class Function {
 
     private ServiceBusSenderClient senderClient = null;
     private ObjectMapper objectMapper = new ObjectMapper();
-    private  void sendMessage(EInvoice invoice){
+    private  void sendMessage(EInvoice invoice,final ExecutionContext context){
         try {
-            senderClient.sendMessage(new ServiceBusMessage(objectMapper.writeValueAsString(invoice)));
+            String message = objectMapper.writeValueAsString(invoice);
+            context.getLogger().info("Message to send:" + message);
+            senderClient.sendMessage(new ServiceBusMessage(message));
         }
         catch(Exception e){
             e.printStackTrace();
@@ -47,8 +49,7 @@ public class Function {
                 .connectionString(CONNECTION_STRING)
                 .sender()
                 .queueName(QUEUE_NAME)
-                .buildClient();
-                 System.out.println("----------------constructor:" + senderClient);
+                .buildClient();               
     }
 
     @FunctionName("TriggerStringPost")
@@ -61,29 +62,30 @@ public class Function {
 
         // Item list
         //context.getLogger().info("Request body is: " + request.getBody().orElse(""));
-
+        context.getLogger().info("Trigger this function app object: " + this);
         // Check request body
         if (!request.getBody().isPresent()) {
+            context.getLogger().info("JSON doc is empty...");
             return request.createResponseBuilder(HttpStatus.BAD_REQUEST)
                     .body("Document not found.")
                     .build();
         }
         else {
-
             try {
                 String jsonDocument = request.getBody().get();
                 List<EInvoice> einvoiceList = objectMapper.readValue(jsonDocument, new TypeReference<List<EInvoice>>() {
                 });
-                einvoiceList.forEach(this::sendMessage);
+                einvoiceList.forEach(p -> sendMessage(p,context));
             }
             catch (Exception e){
                 e.printStackTrace();
+                context.getLogger().severe(e.getMessage());
                 return request.createResponseBuilder(HttpStatus.OK)
                         .header("Content-Type", "application/json")
                         .body("I got it...but got error when passing Json doc:")
                         .build();
             }
-
+            context.getLogger().info("JSON doc parse successfully...");
             return request.createResponseBuilder(HttpStatus.OK)
                     .header("Content-Type", "application/json")
                     .body("I got it...validated the Json doc.")
