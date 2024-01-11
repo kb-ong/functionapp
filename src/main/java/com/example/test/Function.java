@@ -75,6 +75,7 @@ public class Function {
                 String jsonDocument = request.getBody().get();
                 List<EInvoice> einvoiceList = objectMapper.readValue(jsonDocument, new TypeReference<List<EInvoice>>() {
                 });
+                context.getLogger().info("JSON doc parse successfully...");
                 einvoiceList.forEach(p -> sendMessage(p,context));
             }
             catch (Exception e){
@@ -84,8 +85,7 @@ public class Function {
                         .header("Content-Type", "application/json")
                         .body("I got it...but got error when passing Json doc:")
                         .build();
-            }
-            context.getLogger().info("JSON doc parse successfully...");
+            }           
             return request.createResponseBuilder(HttpStatus.OK)
                     .header("Content-Type", "application/json")
                     .body("I got it...validated the Json doc.")
