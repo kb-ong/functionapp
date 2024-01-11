@@ -34,7 +34,7 @@ public class Function {
     private ServiceBusSenderClient senderClient = null;
     private ObjectMapper objectMapper = new ObjectMapper();
     private  void sendMessage(EInvoice invoice){
-        senderClient.sendMessage(new ServiceBusMessage("Hello, World!"));
+        senderClient.sendMessage(new ServiceBusMessage(invoice));
     }
 
     public Function(){
