@@ -35,7 +35,7 @@ public class Function {
     private ObjectMapper objectMapper = new ObjectMapper();
     private  void sendMessage(EInvoice invoice,final ExecutionContext context){
         try {
-            String message = objectMapper.writeValueAsString(invoice);
+            String message = "[" + objectMapper.writeValueAsString(invoice) + "]"
             context.getLogger().info("Message to send:" + message);
             senderClient.sendMessage(new ServiceBusMessage(message));
         }
