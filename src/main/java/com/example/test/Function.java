@@ -34,7 +34,7 @@ public class Function {
     private ServiceBusSenderClient senderClient = null;
     private ObjectMapper objectMapper = new ObjectMapper();
     private  void sendMessage(EInvoice invoice){
-        senderClient.sendMessage(new ServiceBusMessage(objectMapper.writeValueAsString(invoice));
+        senderClient.sendMessage(new ServiceBusMessage(objectMapper.writeValueAsString(invoice)));
     }
 
     public Function(){
